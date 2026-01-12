@@ -462,13 +462,17 @@ elif page == "Organize Files":
             with st.spinner("Organizing files..."):
                 res = organize(fpath, st.session_state["selected_files"])
                 if res.get("status") == "success":
-                    if undo_manager: undo_manager(res.get("moves", []))
+                    moves = res.get("moves", [])
+                    if moves and undo_manager:
+                        undo_manager(moves)
                     st.toast(f"Moved {res['organized_files']} files successfully!", icon="✅")
                     st.session_state["selected_files"] = []
                     time.sleep(1.5)
                     st.rerun()
                 else:
                     st.error(res.get("message"))
+        else:
+            st.error("❌ Failed to load required modules")
 
 elif page == "Backup Files":
     st.header("💾 Backup Files")
@@ -662,9 +666,11 @@ elif page == "Find Duplicates":
                 with b3:
                     if st.button(f"📂 Open {name_b}", key=f"main_op_b_{st.session_state['match_index']}", use_container_width=True): open_system_file(current_res['file_b'])
 
-                st.write("")
-                st.markdown("### 🔍 Detailed Code Comparison")
-                st.components.v1.html(current_res['diff_html'], height=600, scrolling=True)
+                # Highlight button - opens floating highlighted view when pressed
+                c1, c2 = st.columns([1, 1])
+                with c1:
+                    if st.button(f"🔦 Highlight Matches", key=f"highlight_{st.session_state['match_index']}", use_container_width=True):
+                        st.components.v1.html(current_res.get('highlight_html', current_res['diff_html']), height=800)
 
 elif page == "Virus Scan":
     st.header("🛡️ Virus Scan")
@@ -727,6 +733,35 @@ elif page == "Virus Scan":
 elif page == "Undo Actions":
     st.header("↩️ Undo History")
     undoer = lazy_import("services.undo_manager", "undo_last_batch")
+    undo_last_action = lazy_import("services.undo_manager", "undo_last_action")
+    
+    # Quick Undo Button for Most Recent Action
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🔙 Undo Last Action", use_container_width=True, type="primary"):
+            if undo_last_action:
+                with st.spinner("Reversing last action..."):
+                    res = undo_last_action()
+                    if isinstance(res, tuple):
+                        success, message = res
+                        if success:
+                            st.toast(f"✅ {message}", icon="🔙")
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error(f"❌ {message}")
+                    else:
+                        # Fallback for old behavior (boolean)
+                        if res:
+                            st.toast("✅ Last action reversed!", icon="🔙")
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error("❌ Undo failed. Check file permissions.")
+            else:
+                st.error("❌ Undo manager not available")
+    
+    st.markdown("---")
     
     if os.path.exists(UNDO_FILE):
         try:

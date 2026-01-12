@@ -82,3 +82,31 @@ def undo_last_batch(index):
         json.dump(history, f, indent=2)
     
     return True
+
+
+def undo_last_action():
+    """Undo the most recent recorded batch of actions.
+
+    Returns (success: bool, message: str) tuple.
+    """
+    if not os.path.exists(UNDO_FILE):
+        return False, "No undo history file found."
+
+    try:
+        with open(UNDO_FILE, "r") as f:
+            content = f.read().strip()
+            if not content:
+                return False, "No actions recorded in undo history."
+            history = json.loads(content)
+    except (json.JSONDecodeError, ValueError) as e:
+        return False, f"Undo history corrupted: {e}"
+
+    if not history:
+        return False, "No actions to undo."
+
+    last_index = len(history) - 1
+    result = undo_last_batch(last_index)
+    if result:
+        return True, "Last action reversed successfully!"
+    else:
+        return False, "Undo failed - check file permissions or file paths may have changed."
