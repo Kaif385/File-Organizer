@@ -13,7 +13,7 @@ def record_action(moves_list):
             with open(UNDO_FILE, "r") as f:
                 content = f.read().strip()
                 if content:
-                    history = json.load(f)
+                    history = json.loads(content)
         except (json.JSONDecodeError, ValueError):
             history = []
     

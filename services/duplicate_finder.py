@@ -110,7 +110,7 @@ def check_plagiarism(file_list, threshold=50):
                     numlines=5
                 )
                 
-                full_html = f"{custom_css}<div>{diff_table}</div>"
+                full_html = f"<html><head>{custom_css}</head><body>{diff_table}</body></html>"
 
                 results.append({
                     "file_a": valid_files[i],
